@@ -14,6 +14,7 @@ In Int. Conf. on Robotics and Automation, 2014.
 Demo video:
 http://youtu.be/7s9JePSln-M
 
+```
 @string{icra="Int. Conf. on Robotics and Automation"}
 @inproceedings{Steinbruecker-etal-icra14,
   author = {F. Steinbruecker and J. Sturm and D. Cremers},
@@ -25,17 +26,18 @@ http://youtu.be/7s9JePSln-M
   topic = {3D Reconstruction},
   keywords =  {RGB-D,Fusion,3d-reconstruction}
 }
+```
 
 Installation
 ============
 
-$ git clone https://github.com/tum-vision/fastfusion.git
+    $ git clone https://github.com/tum-vision/fastfusion.git`
 
-$ cd fastfusion
+    $ cd fastfusion
+  
+    $ cmake .
 
-$ cmake .
-
-$ make
+    $ make
 
 Preparation of the data
 ======================
