@@ -11,6 +11,8 @@ http://vision.in.tum.de/_media/spezial/bib/steinbruecker_etal_icra2014.pdf
 Volumetric 3D Mapping in Real-Time on a CPU (F. Steinbruecker, J. Sturm, D. Cremers), 
 In Int. Conf. on Robotics and Automation, 2014.
 
+![alt tag](http://vision.in.tum.de/_media/data/software/fastfusion_small.png)
+
 Demo video:
 http://youtu.be/7s9JePSln-M
 
@@ -180,3 +182,5 @@ Where:
    <string>  (accepted multiple times)
      The File Names
 ```
+![alt tag](http://vision.in.tum.de/_media/data/software/screenshot_fastfusion.png)
+
