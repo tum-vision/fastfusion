@@ -60,37 +60,39 @@ http://vision.in.tum.de/data/datasets/rgbd-dataset/
 For simplicity, we take a pre-recorded sequence from the TUM
 RGB-D benchmark.
 
-$ mkdir ~/data
+    $ mkdir ~/data
 
-$ cd ~/data
+    $ cd ~/data
 
-$ wget http://vision.in.tum.de/rgbd/dataset/freiburg3/rgbd_dataset_freiburg3_long_office_household.tgz
+    $ wget http://vision.in.tum.de/rgbd/dataset/freiburg3/rgbd_dataset_freiburg3_long_office_household.tgz
 
-$ tar xvzf rgbd_dataset_freiburg3_long_office_household.tgz
+    $ tar xvzf rgbd_dataset_freiburg3_long_office_household.tgz
 
 Now we need to generate the text file. For this, we use the associate.py tool from
 the RGB-D benchmark website. We need to run it twice, as we join the
 camera poses, the depth image list and the color image list into a single file:
 
-$ cd ~/fastfusion/
+    $ cd ~/fastfusion/
 
-$ ./associate.py ~/data/rgbd_dataset_freiburg3_long_office_household/groundtruth.txt ~/data/rgbd_dataset_freiburg3_long_office_household/depth.txt > tmp.txt
+    $ ./associate.py ~/data/rgbd_dataset_freiburg3_long_office_household/groundtruth.txt ~/data/rgbd_dataset_freiburg3_long_office_household/depth.txt > tmp.txt
 
-$ ./associate.py tmp.txt ~/data/rgbd_dataset_freiburg3_long_office_household/rgb.txt > ~/data/rgbd_dataset_freiburg3_long_office_household/associate.txt
+    $ ./associate.py tmp.txt ~/data/rgbd_dataset_freiburg3_long_office_household/rgb.txt > ~/data/rgbd_dataset_freiburg3_long_office_household/associate.txt
 
 The resulting text file should look as follows:
 
-$ head ~/data/rgbd_dataset_freiburg3_long_office_household/associate.txt
+    $ head ~/data/rgbd_dataset_freiburg3_long_office_household/associate.txt
 
+```
 1341847980.790000 -0.6832 2.6909 1.7373 0.0003 0.8617 -0.5072 -0.0145 1341847980.786879 depth/1341847980.786879.png 1341847980.786856 rgb/1341847980.786856.png
 1341847980.820100 -0.6821 2.6914 1.7371 0.0003 0.8609 -0.5085 -0.0151 1341847980.822989 depth/1341847980.822989.png 1341847980.822978 rgb/1341847980.822978.png
 1341847980.850000 -0.6811 2.6918 1.7371 0.0001 0.8610 -0.5084 -0.0159 1341847980.854690 depth/1341847980.854690.png 1341847980.854676 rgb/1341847980.854676.png
 [..]
+```
 
 Running the code
 ================
 
-$ ./bin/onlinefusion ~/data/rgbd_dataset_freiburg3_long_office_household/associate.txt --thread-fusion
+    $ ./bin/onlinefusion ~/data/rgbd_dataset_freiburg3_long_office_household/associate.txt --thread-fusion
 
 After some debugging output on the console, a window with a 3D viewer should open. To start the 
 reconstruction process, press "S". 
@@ -102,8 +104,7 @@ rotate (left click) the view as you wish using your mouse.
 Further options
 ===============
 
-USAGE: 
-
+```
    ./bin/onlinefusion  [--intrinsics <string>] [--imagescale <float>]
                        [--threshold <float>] [--scale <float>]
                        [--max-camera-distance <float>]
@@ -178,7 +179,4 @@ Where:
 
    <string>  (accepted multiple times)
      The File Names
-
-
-   onlinefusion
-
+```
