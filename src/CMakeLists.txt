@@ -17,7 +17,15 @@ include_directories("/usr/include/qt4/QtXml")
 include_directories("/usr/include/qt4/QtGui")
 include_directories("/usr/include/qt4/QtOpenGL")
 ADD_DEFINITIONS(${QT_DEFINITIONS})
+
+if(EXISTS "${ROOT}/usr/lib/x86_64-linux-gnu/libQGLViewer.so")
+message(STATUS "Found qglviewer2, linking QGLViewer")
+set(QGLVIEWER QGLViewer)
+else()
+message(STATUS "Did not find qglviewer2, linking qglviewer-qt4")
 set(QGLVIEWER qglviewer-qt4)
+endif()
+
 
 # add_executable(cameracalibration cameracalib_main.cpp)
 # target_link_libraries(cameracalibration 
@@ -47,4 +55,5 @@ ${QGLVIEWER}
 QtCore QtGui QtOpenGL
 GL GLU glut GLEW
 boost_thread
+boost_system
 )

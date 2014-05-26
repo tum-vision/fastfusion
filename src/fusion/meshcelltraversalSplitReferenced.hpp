@@ -785,7 +785,7 @@ inline void initializeMeshCellStructures(
 	_meshCells[_meshCells.size()-2].lastBranch[1] = 6;
 	_meshCells[_meshCells.size()-1].lastBranch[0] = 7;
 
-	fprintf(stderr,"\nCreated %li Mesh Cells",_meshCells.size());
+	eprintf("\nCreated %li Mesh Cells",_meshCells.size());
 }
 
 inline void growMeshCellStructures

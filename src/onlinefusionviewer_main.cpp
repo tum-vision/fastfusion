@@ -140,66 +140,6 @@ void filterimage(cv::Mat &image)
 int main(int argc, char *argv[])
 {
 
-	fprintf(stderr,"\nSize of a MCNSplit: %li",sizeof(MCNSplit));
-	fprintf(stderr,"\nSize of MCNCompact: %li",sizeof(MCNCompact));
-
-	stb::doublevector_soa<int,float> testvector;
-	fprintf(stderr,"\nFilling");
-	for(size_t i=0;i<18;i++){
-		testvector.push_back(i,float(i));
-		fprintf(stderr," [%li %li]",i,testvector.capacity());
-	}
-	fprintf(stderr,"\nChanging");
-	for(size_t i=0;i<18;i++){
-		fprintf(stderr," (%i %f)",testvector[i].first,testvector[i].second);
-		testvector[i].second = -testvector[i].second;
-	}
-	fprintf(stderr,"\nPrinting");
-	for(size_t i=0;i<18;i++){
-		fprintf(stderr," (%i %f)",testvector[i].first,testvector[i].second);
-	}
-	fprintf(stderr,"\nPrinting with iterator");
-	for(stb::doublevector_soa<int,float>::iterator it=testvector.begin();it!=testvector.end();it++){
-//		fprintf(stderr," (%i %f)",(*it).first,(*it).second);
-		fprintf(stderr," (%i %f)",it->first,it->second);
-	}
-	fprintf(stderr,"\nEmptying");
-	for(size_t i=0;i<18;i++){
-		testvector.pop_back();
-		fprintf(stderr," [%li %li]",18-i,testvector.capacity());
-	}
-
-
-	std::list<unsigned int> source;
-	source.push_back(0);
-	source.push_back(1);
-	source.push_back(2);
-	source.push_back(3);
-	source.push_back(4);
-	std::list<unsigned int> target;
-	target.push_back(5);
-	target.push_back(6);
-	target.push_back(7);
-	target.push_back(8);
-	target.push_back(9);
-
-	std::list<unsigned int>::iterator it = source.begin();
-	it++; it++;
-	target.splice(target.end(),source,it++);
-	fprintf(stderr,"\nTarget1: ");
-	for(std::list<unsigned int>::iterator j=target.begin();j!=target.end();j++) fprintf(stderr," %i",*j);
-	target.splice(target.end(),source,it++);
-	fprintf(stderr,"\nTarget2: ");
-	for(std::list<unsigned int>::iterator j=target.begin();j!=target.end();j++) fprintf(stderr," %i",*j);
-
-	fprintf(stderr,"\nSize of MeshCell: %li, Size of MeshCellNeighborhood: %li",
-			sizeof(MeshCell),sizeof(MCNSplit));
-	fprintf(stderr,"\nSize of MeshSeparate*: %li, MeshInterleaved*: %li, 4*sidetype: %li, 2*8*volumetype: %li",
-			sizeof(MeshSeparate*),sizeof(MeshInterleaved*),4*sizeof(sidetype),2*8*sizeof(volumetype));
-	fprintf(stderr,"\nSize of MeshCellNeighborhood::CellList: %li",sizeof(MCNSplit::CellList));
-
-
-
 	std::string meshname = "";
 	bool noViewer = true;
 	bool bufferImages = false;

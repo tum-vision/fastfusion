@@ -264,7 +264,7 @@ void OnlineFusionViewerManipulated::drawMeshInterleaved()
 	if(_currentMeshInterleaved && _currentMeshInterleaved->faces.size()){
 		if(_currentMeshInterleaved->vertices.size() != _currentNV ||
 				_currentMeshInterleaved->faces.size() != _currentNF){
-			fprintf(stderr,"\nReassigning Buffers for interleaved Mesh");
+			eprintf("\nReassigning Buffers for interleaved Mesh");
 			if(!_buffersGenerated){
 				generateBuffers();
 			}
@@ -284,7 +284,7 @@ void OnlineFusionViewerManipulated::drawMeshInterleaved()
 						_currentMeshInterleaved->faces.data(), GL_STATIC_DRAW);
 			}
 
-			fprintf(stderr,"\nChecking Mesh...");
+			eprintf("\nChecking Mesh...");
 			std::vector<bool> checks(_currentMeshInterleaved->vertices.size(),false);
 			for(size_t i=0;i<_currentMeshInterleaved->faces.size();i++)
 				checks[_currentMeshInterleaved->faces[i]] = true;
@@ -294,7 +294,7 @@ void OnlineFusionViewerManipulated::drawMeshInterleaved()
 			if(loneVertex){
 				fprintf(stderr,"\nThere were lone Vertices!");
 			}
-			fprintf(stderr,"\nMesh Check done");
+			eprintf("\nMesh Check done");
 		}
 
 
@@ -612,7 +612,7 @@ void OnlineFusionViewerManipulated::keyPressEvent(QKeyEvent *e)
   bool handled = false;
   if ((e->key()==Qt::Key_S) && (modifiers==Qt::NoButton))
   {
-  	if(_verbose) fprintf(stderr,"\nSwitching Fusion %s",_runFusion ? "off" : "on");
+  	if(_verbose) fprintf(stderr,"\n\nSwitching Fusion %s\n",_runFusion ? "off" : "on");
   	_runFusion = !_runFusion;
   	if(_runFusion){
   		connect(_timer,SIGNAL(timeout()),this,SLOT(updateSlot()));
@@ -726,6 +726,7 @@ void OnlineFusionViewerManipulated::keyPressEvent(QKeyEvent *e)
 //  	_fusion->saveZimagesFull();
   	fprintf(stderr,"\nDebug Images saved.");
   }
+
 
 
   if (!handled){
@@ -905,7 +906,7 @@ void fusionWrapper
 //						fprintf(stderr," W:%li",currentFrame)
 						;
 #ifdef PREPROCESS_IMAGES
-					fprintf(stderr,"\nAdd Depthmap %li",currentFrame);
+					DEBUG(fprintf(stderr,"\nAdd Depthmap %li",currentFrame));
 					fusion->addMap(*((cv::Mat*)depthImageBuffer[currentFrame]),pLast[currentFrame],
 							*((std::vector<cv::Mat>*)rgbSplitImageBuffer[currentFrame]));
 #else
@@ -929,7 +930,7 @@ void fusionWrapper
 					fusedFrames = currentFrame;
 				}
 				else{
-					fprintf(stderr,"\nAdd Depthmap %li",currentFrame);
+					eprintf("\nAdd Depthmap %li",currentFrame);
 					cv::Mat depthimage = cv::imread(depthLast[currentFrame],-1);
 					cv::Mat rgbimage = cv::imread(rgbLast[currentFrame]);
 #ifdef PREPROCESS_IMAGES
@@ -942,9 +943,9 @@ void fusionWrapper
 							depthLast[currentFrame].c_str());
 					fusion->addMap(depthimage,pLast[currentFrame],split);
 #else
-					fprintf(stderr,"\nAdding Integer Depthmap");
+					eprintf("\nAdding Integer Depthmap");
 					fusion->addMap(depthimage,pLast[currentFrame],rgbimage,1.0f/imageDepthScale,maxCamDistance);
-					fprintf(stderr,"\nInteger Depthmap added.");
+					eprintf("\nInteger Depthmap added.");
 #endif
 
 #ifndef DEBUG_NO_MESHES
@@ -1100,9 +1101,9 @@ void OnlineFusionViewerManipulated::updateSlot()
 				if(_lightingEnabled) _pointermeshes[0] = new PointerMeshDraw(*_currentMeshInterleaved,_lightingEnabled? 1 : 0);
 #endif
 #endif
-				fprintf(stderr,"\nCopied Mesh, creating Pointer Mesh");
+//				fprintf(stderr,"\nCopied Mesh, creating Pointer Mesh");
 //				_pointermeshes[0] = new PointerMeshDraw(*_currentMeshForSave,_lightingEnabled? 1 : 0);
-				fprintf(stderr,"\nPointer Mesh created");
+//				fprintf(stderr,"\nPointer Mesh created");
 			}
 		}
 	}
@@ -1158,7 +1159,7 @@ void OnlineFusionViewerManipulated::updateSlot()
 							if(_lightingEnabled) _pointermeshes[0] = new PointerMeshDraw(*_currentMeshInterleaved,_lightingEnabled? 1 : 0);
 #endif
 #endif
-							fprintf(stderr,"\nInterleaved Mesh assigned");
+							eprintf("\nInterleaved Mesh assigned");
 //							_pointermeshes[0] = new PointerMeshDraw(*_currentMeshForSave,_lightingEnabled? 1 : 0);
 						}
 					}

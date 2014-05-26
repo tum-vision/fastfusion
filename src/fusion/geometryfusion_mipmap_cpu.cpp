@@ -16,10 +16,11 @@
 #include "inline_functions.hpp"
 
 #include <stdlib.h>
-#include <xmmintrin.h> // SSE intrinsics
+#include <xmmintrin.h> // SSE  intrinsics
 #include <emmintrin.h> // SSE2 intrinsics
 #include <pmmintrin.h> // SSE3 intrinsics
 #include <smmintrin.h>
+#include <immintrin.h> // AVX  intrinsics
 
 #include "update_functions.cpp"
 
@@ -529,8 +530,8 @@ _threadMeshing(false)
 
 
 #ifdef RESERVE_VECTOR_MEMORY
-  ProcessMemoryStats usedMemory = getProcessMemory();
-  fprintf(stderr,"\nUsed Memory: %li Bytes",usedMemory.size*usedMemory.pageSize);
+//  ProcessMemoryStats usedMemory = getProcessMemory();
+//  fprintf(stderr,"\nUsed Memory: %li Bytes",usedMemory.size*usedMemory.pageSize);
 	char input[256];
 	if(_interactiveMemoryManagement){
 		fprintf(stderr,"\nPress Enter to reserve memory for the vectors");
@@ -600,8 +601,8 @@ _threadMeshing(false)
   totalMemoryForVectors += _meshCellIndicesLeaf.capacity()*sizeof(LeafNeighborhood);
   fprintf(stderr,"\nTotal Memory reserved for Vectors = %li Bytes",totalMemoryForVectors);
 
-  usedMemory = getProcessMemory();
-  fprintf(stderr,"\nUsed Memory: %li Bytes",usedMemory.size*usedMemory.pageSize);
+//  usedMemory = getProcessMemory();
+//  fprintf(stderr,"\nUsed Memory: %li Bytes",usedMemory.size*usedMemory.pageSize);
 
 
 //	fprintf(stderr,"\nPress Enter to resize the vectors");
@@ -631,8 +632,9 @@ _threadMeshing(false)
   _meshCellIndicesBranchCompact.resize(16);
 #endif
 
-  usedMemory = getProcessMemory();
-  fprintf(stderr,"\nUsed Memory: %li Bytes",usedMemory.size*usedMemory.pageSize);
+//  usedMemory = getProcessMemory();
+//  fprintf(stderr,"\nUsed Memory: %li Bytes",usedMemory.size*usedMemory.pageSize);
+  if(_verbose) fprintf(stderr,"\nFusionMipMapCPU created.\n\n");
 
 #endif
 }
@@ -1005,17 +1007,29 @@ bool FusionMipMapCPU:: allocateMemoryCPU()
   _tree = new volumetype[_nBranchesTotal];
   for(volumetype i=0;i<_nBranchesTotal;i++) _tree[i] = BRANCHINIT;
   int allocResult;
+#ifdef OWNAVX
+  allocResult = posix_memalign((void**)&_distance,32,_nLeavesTotal*_brickSize*sizeof(float));
+#else
   allocResult = posix_memalign((void**)&_distance,16,_nLeavesTotal*_brickSize*sizeof(float));
+#endif
   if(allocResult) fprintf(stderr,"\nERROR: Aligned Allocation of the Distance Memory failed!");
   totalMemAlloc += _nLeavesTotal*_brickSize*sizeof(float);
   if(_loopClosureMode){
+#ifdef OWNAVX
+    allocResult = posix_memalign((void**)&_weightsLoop,32,_nLeavesTotal*_brickSize*sizeof(float));
+#else
     allocResult = posix_memalign((void**)&_weightsLoop,16,_nLeavesTotal*_brickSize*sizeof(float));
+#endif
     if(allocResult) fprintf(stderr,"\nERROR: Aligned Allocation of the Weights Memory for the Loop failed!");
     totalMemAlloc += _nLeavesTotal*_brickSize*sizeof(float);
     memset(_weightsLoop,0,_nLeavesTotal*_brickSize*sizeof(float));
   }
   else{
+#ifdef OWNAVX
+    allocResult = posix_memalign((void**)&_weights,32,_nLeavesTotal*_brickSize*sizeof(weighttype));
+#else
     allocResult = posix_memalign((void**)&_weights,16,_nLeavesTotal*_brickSize*sizeof(weighttype));
+#endif
     if(allocResult) fprintf(stderr,"\nERROR: Aligned Allocation of the Weights Memory failed!");
     totalMemAlloc += _nLeavesTotal*_brickSize*sizeof(weighttype);
     memset(_weights,0,_nLeavesTotal*_brickSize*sizeof(weighttype));
@@ -1589,7 +1603,7 @@ int FusionMipMapCPU::addMap(cv::Mat &depth, CameraInfo caminfo,
 int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::Mat &rgb,
 		float scaling, float maxcamdistance)
 {
-	fprintf(stderr,"\nAdding Integer Image %i",_framesAdded);
+	fprintf(stderr,"\nI[%i]",_framesAdded);
 	//Parameter Helpers
 	cv::Mat rot = caminfo.getRotation();
 	cv::Mat trans = caminfo.getTranslation();
@@ -1690,6 +1704,7 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 
 
 	//Empty the Data Queue
+	//TODO: Instead O(n) operation go through the queue
 	for(volumetype i=0;i<_nLeavesTotal;i++) _queueIndexOfLeaf[i] = MAXLEAFNUMBER;
 	_nLeavesQueuedSurface = 0;
 	_nLeavesQueuedFrustum = 0;
@@ -1806,7 +1821,7 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 		qyp3[y] = p.r32*_pyp[y] + p.r33;
 	}
 
-	fprintf(stderr, "T");
+//	fprintf(stderr, "T");
 
 #ifndef SEPARATE_MESHCELL_STRUCTURE
 	transformLoopSimPrecalculatedNeg_vis(qxp1,qxp2,qxp3,qyp1,qyp2,qyp3,p.t1,p.t2,p.t3,
@@ -1826,7 +1841,7 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 			_newBudsSinceMeshingToQueue.subtreeBudsParentLeaf->data(),
 			_newBudsSinceMeshingToQueue.leafBuds->data(),
 			_numberOfQueuedTreeBuds,_numberOfQueuedLeafBuds,_treeSizeSinceMeshing);
-	fprintf(stderr,"\n%i new Subtrees and %i new Leaves this Map",
+	eprintf("\n%i new Subtrees and %i new Leaves this Map",
 			_numberOfQueuedTreeBuds,_numberOfQueuedLeafBuds);
 	for(size_t i=0;i<_numberOfQueuedTreeBuds;i++){
 		_newBudsSinceMeshingToAccumulate.subtreeBuds->push_back((*_newBudsSinceMeshingToQueue.subtreeBuds)[i]);
@@ -1839,7 +1854,8 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 
 #endif
 
-	fprintf(stderr,"!");
+
+//	fprintf(stderr,"!");
 	double time2 = (double)cv::getTickCount();
 //
 //	fprintf(stderr,"F");
@@ -1872,7 +1888,7 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 		time4 = (double)cv::getTickCount();
 	}
 	else{
-		fprintf(stderr, "U");
+//		fprintf(stderr, "U");
 		updateWrapperInteger(SDFUpdateParameterInteger(
 				(const ushort*)depthdata, scaling, maxcamdistance, (const uchar*)rgb.data,
 				_imageWidth,_imageHeight,
@@ -1883,7 +1899,7 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 
 		time4 = (double)cv::getTickCount();
 
-		fprintf(stderr,"!");
+//		fprintf(stderr,"!");
 	}
 
 	if(_nLeavesUsed < _nLeavesTotal && _nBranchesUsed < _nBranchesTotal &&
@@ -1919,36 +1935,38 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 
 #ifdef SEPARATE_MESHCELL_STRUCTURE
 		//TODO: Das hier in den Nachbarthread migrieren
-		if(_newBudsSinceMeshingToClear.subtreeBuds->size() ||
-				_newBudsSinceMeshingToClear.subtreeBudsParentLeaf->size() ||
-				_newBudsSinceMeshingToClear.leafBuds->size()){
-			fprintf(stderr,"\nERROR: Vector of Branches queued for MeshCell Structure"
-					" Creation not yet empty: %li %li %li",
-					_newBudsSinceMeshingToClear.subtreeBuds->size(),
-					_newBudsSinceMeshingToClear.subtreeBudsParentLeaf->size(),
-					_newBudsSinceMeshingToClear.leafBuds->size());
-		}
-		BudsAnchor temp = _newBudsSinceMeshingToClear;
-		_newBudsSinceMeshingToClear = _newBudsSinceMeshingToAccumulate;
-		_newBudsSinceMeshingToAccumulate = temp;
-		_treeSizeForMeshing = _nBranchesUsed;
-//#if defined MESHCELLINDICES_SPLIT && defined MESHCELLINDICES_COMPACT
-//			fprintf(stderr,"\nBranch Indices Sizes before: %li %li",_meshCellIndicesBranch.size(),_meshCellIndicesBranchCompact.size());
-//			fprintf(stderr,"\nMeshCells Sizes before: %li %li",_meshCells.size(),_meshCellsDebug.size());
-//#endif
-		updateMeshCellStructure();
-//#if defined MESHCELLINDICES_SPLIT && defined MESHCELLINDICES_COMPACT
-//			fprintf(stderr,"\nBranch Indices Sizes after: %li %li",_meshCellIndicesBranch.size(),_meshCellIndicesBranchCompact.size());
-//			fprintf(stderr,"\nMeshCells Sizes after: %li %li",_meshCells.size(),_meshCellsDebug.size());
-//#endif
-		_treeSizeSinceMeshing = _treeSizeForMeshing;
+//		if(_newBudsSinceMeshingToClear.subtreeBuds->size() ||
+//				_newBudsSinceMeshingToClear.subtreeBudsParentLeaf->size() ||
+//				_newBudsSinceMeshingToClear.leafBuds->size()){
+//			fprintf(stderr,"\nERROR: Vector of Branches queued for MeshCell Structure"
+//					" Creation not yet empty: %li %li %li",
+//					_newBudsSinceMeshingToClear.subtreeBuds->size(),
+//					_newBudsSinceMeshingToClear.subtreeBudsParentLeaf->size(),
+//					_newBudsSinceMeshingToClear.leafBuds->size());
+//		}
+//		BudsAnchor temp = _newBudsSinceMeshingToClear;
+//		_newBudsSinceMeshingToClear = _newBudsSinceMeshingToAccumulate;
+//		_newBudsSinceMeshingToAccumulate = temp;
+//		_treeSizeForMeshing = _nBranchesUsed;
 
-		pushLeafQueueForMeshing();
+		beforeUpdateMeshCellStructure();
+
+		updateMeshCellStructure();
+
+		afterUpdateMeshCellStructure();
+
+//		_treeSizeSinceMeshing = _treeSizeForMeshing;
+//
+//		pushLeafQueueForMeshing();
+
+#else
+
+		eprintf("\nPushing Mesh Cell queue");
+		pushMeshCellQueue();
+		eprintf("\nMesh Cell queue pushed");
 #endif
 
-		fprintf(stderr,"\nPushing Mesh Cell queue");
-		pushMeshCellQueue();
-		fprintf(stderr,"\nMesh Cell queue pushed");
+
 	}
 #endif
 
@@ -1985,18 +2003,15 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 			meshIndicesBranchEmptySize += sizeof(_meshCellIndicesBranch[i]);
 		}
 
-		fprintf(stderr,"\nMesh Cell Indices Branch use %li Bytes, and %li Bytes empty\n",
+		eprintf("\nMesh Cell Indices Branch use %li Bytes, and %li Bytes empty\n",
 				meshIndicesBranchSize,meshIndicesBranchEmptySize);
-		fprintf(stderr,"\nSize of a Mesh Cell: %li = %li + %li + 4*%li + 16*%li",sizeof(MeshCell),
+		eprintf("\nSize of a Mesh Cell: %li = %li + %li + 4*%li + 16*%li",sizeof(MeshCell),
 				sizeof(int),sizeof(MeshInterleaved*),sizeof(sidetype),sizeof(volumetype));
-		size_t meshCellsSize = _meshCells.capacity()*sizeof(MeshCell);
-		fprintf(stderr,"\nSize of all Mesh Cells: %li * %li = %li",_meshCells.capacity(),sizeof(MeshCell),meshCellsSize);
-		size_t meshCellsMeshesEmptySize = _meshCells.size()*sizeof(MeshInterleaved);
+		eprintf("\nSize of all Mesh Cells: %li * %li = %li",_meshCells.capacity(),sizeof(MeshCell),_meshCells.capacity()*sizeof(MeshCell));
 
-		fprintf(stderr,"\nEmpty Size of a Mesh: %li, empty Size of all Meshes %li * %li = %li",
-				sizeof(MeshInterleaved),_meshCells.size(),sizeof(MeshInterleaved),meshCellsMeshesEmptySize);
-		size_t meshIndicesLeafSize = _meshCellIndicesLeaf.capacity()*sizeof(LeafNeighborhood);
-		fprintf(stderr,"\nMesh Cell Indices Leaf use %li Bytes",meshIndicesLeafSize);
+		eprintf("\nEmpty Size of a Mesh: %li, empty Size of all Meshes %li * %li = %li",
+				sizeof(MeshInterleaved),_meshCells.size(),sizeof(MeshInterleaved),_meshCells.size()*sizeof(MeshInterleaved));
+		eprintf("\nMesh Cell Indices Leaf use %li Bytes",_meshCellIndicesLeaf.capacity()*sizeof(LeafNeighborhood));
 
 		size_t verticesSize = 0;
 		size_t facesSize = 0;
@@ -2009,13 +2024,73 @@ int FusionMipMapCPU::addMap(const cv::Mat &depth, CameraInfo caminfo, const cv::
 		verticesSize *= sizeof(Vertex3f);
 		facesSize *= sizeof(unsigned int);
 		colorsSize *= sizeof(Color3b);
-		fprintf(stderr,"\nMeshesSize: Vertices: %li , Faces: %li , Color: %li",
+		eprintf("\nMeshesSize: Vertices: %li , Faces: %li , Color: %li",
 				verticesSize,facesSize,colorsSize);
 	}
 
 
 	return _nLeavesQueuedSurface;
 
+}
+
+
+void FusionMipMapCPU::queryNeighborsWithoutMeshCells(){
+
+	//TEST
+
+//	for(volumetype i=0;i<_nLeavesQueuedSurface;i++){
+//		volumetype leaf = _leafNumberSurface[i];
+//		sidetype3 leafpos = _leafPos[leaf];
+//		sidetype leafscale = _leafScale[leaf];
+//
+//		for(sidetype lpx=leafpos.x-leafscale*_brickLength;lpx<=leafpos.x+leafscale*_brickLength;lpx+=leafscale*_brickLength){
+//			for(sidetype lpy=leafpos.y-leafscale*_brickLength;lpy<=leafpos.y+leafscale*_brickLength;lpy+=leafscale*_brickLength){
+//				for(sidetype lpz=leafpos.z-leafscale*_brickLength;lpz<=leafpos.z+leafscale*_brickLength;lpz+=leafscale*_brickLength){
+//					queryPointDepthSingle_func_subtree(lpx,lpy,lpz,leafscale,
+//							_n,_brickLength,_tree,_nBranchesUsed,_nLeavesTotal,_nLeavesUsed,_nLeavesQueuedSurface,
+//							_leafNumberSurface,_leafPos,_leafScale,_queueIndexOfLeaf,_leafParent,
+//							_newBudsSinceMeshingToQueue.subtreeBuds->data(),
+//							_newBudsSinceMeshingToQueue.subtreeBudsParentLeaf->data(),
+//							_newBudsSinceMeshingToQueue.leafBuds->data(),
+//							_numberOfQueuedTreeBuds,_numberOfQueuedLeafBuds,
+//							_treeSizeSinceMeshing);
+//				}
+//			}
+//		}
+//
+//
+//	}
+}
+
+void FusionMipMapCPU::beforeUpdateMeshCellStructure(){
+
+	if(_newBudsSinceMeshingToClear.subtreeBuds->size() ||
+			_newBudsSinceMeshingToClear.subtreeBudsParentLeaf->size() ||
+			_newBudsSinceMeshingToClear.leafBuds->size()){
+		fprintf(stderr,"\nERROR: Vector of Branches queued for MeshCell Structure"
+				" Creation not yet empty: %li %li %li",
+				_newBudsSinceMeshingToClear.subtreeBuds->size(),
+				_newBudsSinceMeshingToClear.subtreeBudsParentLeaf->size(),
+				_newBudsSinceMeshingToClear.leafBuds->size());
+	}
+	BudsAnchor temp = _newBudsSinceMeshingToClear;
+	_newBudsSinceMeshingToClear = _newBudsSinceMeshingToAccumulate;
+	_newBudsSinceMeshingToAccumulate = temp;
+	_treeSizeForMeshing = _nBranchesUsed;
+	//FIXME: Ob das man hier richtig ist ...
+	_treeSizeSinceMeshing = _treeSizeForMeshing;
+
+}
+
+void FusionMipMapCPU::afterUpdateMeshCellStructure(){
+
+
+
+	pushLeafQueueForMeshing();
+
+	eprintf("\nPushing Mesh Cell queue");
+	pushMeshCellQueue();
+	eprintf("\nMesh Cell queue pushed");
 }
 
 
@@ -2412,7 +2487,7 @@ void populate_branch_separate_compact
 
 void FusionMipMapCPU::updateMeshCellStructure()
 {
-	fprintf(stderr,"\nUpdating MeshCell Structure...");
+	eprintf("\nUpdating MeshCell Structure...");
 
 //	fprintf(stderr,"\nInterior Indices Regular:\n");
 //	for(size_t i=0;i<_meshCellIndicesBranch.size();i++){
@@ -2537,12 +2612,12 @@ void FusionMipMapCPU::updateMeshCellStructure()
 	}
 
 	_newBudsSinceMeshingToClear.leafBuds->clear();
-	fprintf(stderr,"\nMeshCell Structure updated");
+	eprintf("\nMeshCell Structure updated");
 }
 
 void FusionMipMapCPU::pushLeafQueueForMeshing()
 {
-	fprintf(stderr,"\nPushing new leaves in the queue for meshing");
+	eprintf("\nPushing new leaves in the queue for meshing");
 	for(volumetype i=0;i<_nLeavesQueuedSurface;i++){
 		volumetype leaf = _leafNumberSurface[i];
 		if(!_leafIsQueuedForMeshing[leaf]){
@@ -2550,23 +2625,19 @@ void FusionMipMapCPU::pushLeafQueueForMeshing()
 			_leafQueueForMeshing.push_back(leaf);
 		}
 	}
-	fprintf(stderr,"\nLeaves pushed in meshing queue.");
+	eprintf("\nLeaves pushed in meshing queue.");
 }
 
 void FusionMipMapCPU::pushMeshCellQueue()
 {
-//#ifdef MESHCELLINDICES_SPLIT
-//	MeshCellArray &meshCellsLocal = _meshCells;
-//#endif
-//#ifdef MESHCELLINDICES_COMPACT
-//	MeshCellArray &meshCellsLocal = _meshCellsCompact;
-//#endif
 
 
 	_meshCellIsQueuedNext->resize(_meshCells.size(),false);
 
-	for(volumetype i=0;i<_nLeavesQueuedSurface;i++){
-		volumetype leaf = _leafNumberSurface[i];
+	for(std::deque<volumetype>::iterator it=_leafQueueForMeshing.begin();it!=_leafQueueForMeshing.end();it++){
+		volumetype leaf = *it;
+//	for(volumetype i=0;i<_nLeavesQueuedSurface;i++){
+//		volumetype leaf = _leafNumberSurface[i];
 
 		for(LeafNeighborhood::iterator j=_meshCellIndicesLeaf[leaf].begin();j!=_meshCellIndicesLeaf[leaf].end();j++){
 			if((*j)>=_meshCells.size()) fprintf(stderr,"\nERROR: Leaf Queue Index %li >= _meshCells.size() of %li",
@@ -2596,7 +2667,11 @@ void FusionMipMapCPU::pushMeshCellQueue()
 				}
 			}
 		}
+
+		_leafIsQueuedForMeshing[leaf] = false;
 	}
+
+	_leafQueueForMeshing.clear();
 
 	size_t interiorFullCells = 0;
 	size_t interiorCells = 0;
@@ -2788,7 +2863,7 @@ void meshWrapperInterleaved
 	mesh->colors.reserve(numVerticesTotal);
 	mesh->faces.reserve(numFacesTotal);
 
-	fprintf(stderr,"\nSumming up %li Mesh Cells...",meshcellsSize);
+	eprintf("\nSumming up %li Mesh Cells...",meshcellsSize);
 	for(size_t i=0;i<meshcellsSize;i++){
 //		fprintf(stderr," %li",i);
 		*mesh += *((*meshCells)[i].meshinterleaved);
@@ -2800,7 +2875,7 @@ void meshWrapperInterleaved
 	double timeSum = timeAfter-timeMiddle;
 
 	if(meshTimes) meshTimes->push_back(FusionMipMapCPU::MeshStatistic(0,oldSize,meshcellsSize,timeUpdate,timeSum));
-	fprintf(stderr,"\nMeshes summed up.");
+	eprintf("\nMeshes summed up.");
 	*meshingDone = 0;
 }
 
@@ -2822,7 +2897,7 @@ bool FusionMipMapCPU::updateMeshes()
 			(*_meshCellIsQueuedCurrent)[*i] = false;
 		}
 
-		fprintf(stderr,"\nSwitching MeshCellQueue");
+		eprintf("\nSwitching MeshCellQueue");
 		_meshCellQueueCurrent = _meshCellQueueOld = _meshCellQueueNext;
 		_meshCellQueueNext.clear();
 
@@ -2833,7 +2908,7 @@ bool FusionMipMapCPU::updateMeshes()
 			*i = false;
 		}
 
-		fprintf(stderr,"\nMeshCellQueue switched");
+		eprintf("\nMeshCellQueue switched");
 
 		_meshCellsCopy = _meshCells;
 		_leafParentCopy = _leafParent;
@@ -2844,7 +2919,7 @@ bool FusionMipMapCPU::updateMeshes()
 				if(_loggingEnabled){
 					if(_meshTimes.size()) _meshTimes.back().frameNumber = _meshingStartFrame;
 				}
-				delete _meshThread;
+				delete _meshThread; _meshThread = NULL;
 			}
 //			MeshSeparate *separate = _meshSeparateCurrent; _meshSeparateCurrent = _meshSeparateNext; _meshSeparateNext = separate;
 			MeshInterleaved *interleaved = _meshCurrent; _meshCurrent = _meshNext; _meshNext = interleaved;
@@ -2860,7 +2935,7 @@ bool FusionMipMapCPU::updateMeshes()
 			MeshInterleaved *interleaved = _meshCurrent; _meshCurrent = _meshNext; _meshNext = interleaved;
 //			meshWrapperSeparate(&_meshCellQueueCurrent,_meshCellIsQueuedCurrent,&_meshCellsCopy,
 //					&_leafParentCopy,&_mc,&_treeinfo,&_meshingDone,_meshSeparateNext,&_meshTimes);
-			fprintf(stderr,"\nCalling meshWrapperInterleaved without Threading");
+			eprintf("\nCalling meshWrapperInterleaved without Threading");
 			meshWrapperInterleaved(&_meshCellQueueCurrent,_meshCellIsQueuedCurrent,&_meshCellsCopy,
 					&_leafParentCopy,&_mc,&_treeinfo,&_meshingDone,_meshNext,&_meshTimes);
 //			separate = _meshSeparateCurrent; _meshSeparateCurrent = _meshSeparateNext; _meshSeparateNext = separate;
@@ -2996,7 +3071,11 @@ std::pair<size_t,size_t> compareMeshCellArrays(const FusionMipMapCPU::MeshCellAr
 bool FusionMipMapCPU::grow()
 {
 	fprintf(stderr,"\nGrowing Tree...");
-	if(_meshThread) _meshThread->join();
+	if(_meshThread) {
+		_meshThread->join();
+		delete _meshThread;
+		_meshThread = NULL;
+	}
 
 	double time2 = (double)cv::getTickCount();
 	double timeBegin = time2;
@@ -3267,7 +3346,7 @@ MeshSeparate FusionMipMapCPU::getMeshSeparateMarchingCubes(MeshSeparate mesh)
 {
 
 
-	fprintf(stderr,"\nGetting Nonindexed Mesh Recursively");
+	eprintf("\nGetting Nonindexed Mesh Recursively");
 	return getMeshRecursive(mesh);
 
 //	fprintf(stderr,"\nGetting Nonindexed Mesh Recursively with Parent Information");
@@ -3287,9 +3366,9 @@ MeshInterleaved FusionMipMapCPU::getMeshInterleavedMarchingCubes(MeshInterleaved
 //	fprintf(stderr,"\nGetting Nonindexed Mesh Recursively with Parent Information");
 //	return getMeshRecursiveIncremental(mesh);
 
-	fprintf(stderr,"\nGetting Indexed Interleaved Mesh Approximate");
+	eprintf("\nGetting Indexed Interleaved Mesh Approximate");
 
-	fprintf(stderr,"\nInterleaved Mesh-Cell Mesh has %li vertices and %li indices",
+	eprintf("\nInterleaved Mesh-Cell Mesh has %li vertices and %li indices",
 			_meshCurrent->vertices.size(),_meshCurrent->faces.size());
 	return *_meshCurrent;
 }

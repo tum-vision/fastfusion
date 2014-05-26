@@ -18,15 +18,46 @@ find_package(OpenCV REQUIRED)
 #link_directories(${TBB_LIBRARY_DIRS})
 #endif(NOT TBB_FOUND)
 
+
+if (CMAKE_COMPILER_IS_GNUCC)
+    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
+                    OUTPUT_VARIABLE GCC_VERSION)
+    string(REGEX MATCHALL "[0-9]+" GCC_VERSION_COMPONENTS ${GCC_VERSION})
+    list(GET GCC_VERSION_COMPONENTS 0 GCC_MAJOR)
+    list(GET GCC_VERSION_COMPONENTS 1 GCC_MINOR)
+
+    message(STATUS "GCC Major Version is " ${GCC_MAJOR})
+    message(STATUS "GCC Major Version is " ${GCC_MINOR})
+endif()
+
 set(CMAKE_C_FLAGS
 -frounding-math 
 #-Wall
 )
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -msse4 -funroll-loops")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -msse4 -funroll-loops")
+
+execute_process(COMMAND cat /proc/cpuinfo OUTPUT_VARIABLE CPU_INFO)
+string(REGEX MATCHALL "avx2" AVX_STRING ${CPU_INFO})
+list(LENGTH AVX_STRING AVX_STRING_LENGTH)
+# message(STATUS "AVX_STRING: " ${AVX_STRING})
+message(STATUS "Number of avx2 occurrences in /proc/cpuinfo: " ${AVX_STRING_LENGTH})
+
+
+if(${AVX_STRING_LENGTH} GREATER 0)
+message(STATUS "Compiling with AVX2 support")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -mavx2 -funroll-loops -DOWNAVX")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -mavx2 -funroll-loops -DOWNAVX")
+else()
+message(STATUS "Compiling without AVX2 support")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -msse4.2 -funroll-loops")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -msse4.2 -funroll-loops")
+endif()
+
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPRINT_DEBUG")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPRINT_DEBUG")
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
@@ -61,10 +92,10 @@ include_directories("/usr/include/eigen3")
 # include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 # set(TEST_CUDA_ARCH $ENV{CUDA_ARCH})
 # if(TEST_CUDA_ARCH)
-# message("The GPU Architecture is set to $ENV{CUDA_ARCH} in an Environment Variable")
+# message(STATUS "The GPU Architecture is set to $ENV{CUDA_ARCH} in an Environment Variable")
 # set(CUDA_ARCH $ENV{CUDA_ARCH})
 # else(TEST_CUDA_ARCH)
-# message("No GPU Architecture set, setting to sm_13")
+# message(STATUS "No GPU Architecture set, setting to sm_13")
 # set(CUDA_ARCH sm_11)
 # endif(TEST_CUDA_ARCH)
 # #if(${CUDA_ARCH} matches sm_11)

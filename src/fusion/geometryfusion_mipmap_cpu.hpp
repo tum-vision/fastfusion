@@ -139,8 +139,12 @@ public:
 	CellUpdate &getMeshCellsUpdate();
 	bool updateMeshes();
 	void updateMeshCellStructure();
+	void beforeUpdateMeshCellStructure();
+	void afterUpdateMeshCellStructure();
 	void pushMeshCellQueue();
 	void pushLeafQueueForMeshing();
+
+	void queryNeighborsWithoutMeshCells();
 
 	void updateArraysForLoopClosure(FusionMipMapCPU *fusion);
 	void startLoopClosure();
@@ -360,7 +364,8 @@ protected:
 
 	class BudsAnchor{
 	public:
-		BudsAnchor(){fprintf(stderr,"\nCreating SubtreeAnchor");
+		BudsAnchor(){
+//			fprintf(stderr,"\nCreating SubtreeAnchor");
 		subtreeBuds=NULL;subtreeBudsParentLeaf=NULL;leafBuds=NULL;}
 		std::vector<volumetype> *subtreeBuds;
 		std::vector<volumetype> *subtreeBudsParentLeaf;

@@ -307,6 +307,30 @@ typedef struct int3_ { int x; int y; int z;} int3;
 #endif
 #endif
 
+//#ifndef DEBUG_OUTPUT_DEFINED
+//#define DEBUG_OUTPUT_DEFINED
+//#ifdef PRINT_DEBUG
+//#define DEBUG(X) (X)
+//#else
+//#define DEBUG(X)
+//#endif
+//#endif
+
+#ifndef DEBUG_OUTPUT_DEFINED
+#define DEBUG_OUTPUT_DEFINED
+#ifdef PRINT_DEBUG
+//#define WHERESTR  "[file %s, line %d]: "
+//#define WHEREARG  __FILE__, __LINE__
+//#define DEBUGPRINT2(...)       fprintf(stderr, __VA_ARGS__)
+//#define DEBUGPRINT(_fmt, ...)  DEBUGPRINT2(WHERESTR _fmt, WHEREARG, __VA_ARGS__)
+#define eprintf( ...)  fprintf(stderr, __VA_ARGS__)
+#else
+#define eprintf(...)
+#endif
+#endif
+
+#define DEBUG bla
+
 
 //#define IMAGEINFINITE 1000000.0f
 //#define FILTERMODE cudaFilterModePoint
@@ -320,6 +344,10 @@ typedef struct int3_ { int x; int y; int z;} int3;
 #define TRAVERSALHEIGHTFINITECPU (std::isfinite(pz))
 #define TRAVERSALHEIGHTFINITEGPU (isfinite(pz))
 
+#ifdef OWNAVX
+#define ALIGNED __attribute__ ((aligned (32)))
+#else
 #define ALIGNED __attribute__ ((aligned (16)))
+#endif
 
 #endif /* DEFINITIONS_H_ */
