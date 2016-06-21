@@ -8,7 +8,7 @@
 #ifndef DEFINITIONS_H_
 #define DEFINITIONS_H_
 
-
+#include <limits>
 #define UNENDLICH std::numeric_limits<float>::infinity()
 
 //#define CRAPPY_LAPPY
