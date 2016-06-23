@@ -6,6 +6,7 @@
  */
 #include <GL/glew.h>
 #include "onlinefusionviewer.hpp"
+#include <QGLViewer/manipulatedFrame.h>
 #include <math.h>
 #include <QMenu>
 #include <QKeyEvent>
